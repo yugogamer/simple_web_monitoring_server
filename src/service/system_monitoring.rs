@@ -27,12 +27,25 @@ pub fn get_current_value() -> SystemData {
             temperature: component.temperature(),
         })
     }
+
+    let max_memory = sys.total_memory();
+    let used_memory = sys.used_memory();
+
+    let hostname = sys.host_name();
+    let os = sys.long_os_version();
+
+    let uptime = sys.uptime();
     
 
-    SystemData{ 
+    SystemData{
+        hostname,
+        os,
         cpu_name: cpu_global.brand().to_string().trim().to_string(),
         cpu_usage_global_usage: cpu_global.cpu_usage(),
         cpu_global_frequency: cpu_global.frequency(),
+        max_memory: max_memory,
+        used_memory: used_memory,
+        server_uptime: uptime,
         cpu_cores: cores,
         temps,
         last_update: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis(),
