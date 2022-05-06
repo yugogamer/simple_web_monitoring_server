@@ -1,9 +1,8 @@
 use std::{sync::Arc, time::SystemTime};
 
-use crate::entity::cpu::{SystemData, Core, ComponentTemp};
-use tokio::{sync::RwLock};
-use sysinfo::{System, SystemExt, ProcessorExt, ComponentExt};
-
+use crate::entity::system::{ComponentTemp, Core, SystemData};
+use sysinfo::{ComponentExt, ProcessorExt, System, SystemExt};
+use tokio::sync::RwLock;
 
 pub fn get_current_value() -> SystemData {
     let mut sys = System::new_all();
@@ -13,7 +12,7 @@ pub fn get_current_value() -> SystemData {
     let mut cores = Vec::new();
 
     for processor in sys.processors() {
-        cores.push(Core{
+        cores.push(Core {
             usage: processor.cpu_usage(),
             frequency: processor.frequency(),
         })
@@ -22,7 +21,7 @@ pub fn get_current_value() -> SystemData {
     let mut temps = Vec::new();
 
     for component in sys.components() {
-        temps.push(ComponentTemp{
+        temps.push(ComponentTemp {
             label: component.label().to_string(),
             temperature: component.temperature(),
         })
@@ -35,9 +34,8 @@ pub fn get_current_value() -> SystemData {
     let os = sys.long_os_version();
 
     let uptime = sys.uptime();
-    
 
-    SystemData{
+    SystemData {
         hostname,
         os,
         cpu_name: cpu_global.brand().to_string().trim().to_string(),
@@ -48,15 +46,18 @@ pub fn get_current_value() -> SystemData {
         server_uptime: uptime,
         cpu_cores: cores,
         temps,
-        last_update: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis(),
+        last_update: SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis(),
     }
 }
 
-pub async fn update_value(value : Arc<RwLock<SystemData>>) {
+pub async fn update_value(value: Arc<RwLock<SystemData>>) {
     loop {
         let mut value_write = value.write().await;
         *value_write = get_current_value();
         drop(value_write);
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
     }
 }

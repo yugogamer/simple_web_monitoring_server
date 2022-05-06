@@ -1,4 +1,4 @@
-use rocket::serde::{Serialize, Deserialize};
+use rocket::serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
@@ -13,19 +13,19 @@ pub struct SystemData {
     pub server_uptime: u64,
     pub cpu_cores: Vec<Core>,
     pub temps: Vec<ComponentTemp>,
-    pub last_update: u128
+    pub last_update: u128,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
-pub struct Core{
-    pub usage : f32,
-    pub frequency : u64,
+pub struct Core {
+    pub usage: f32,
+    pub frequency: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
-pub struct ComponentTemp{
-    pub label : String,
-    pub temperature : f32,
+pub struct ComponentTemp {
+    pub label: String,
+    pub temperature: f32,
 }
