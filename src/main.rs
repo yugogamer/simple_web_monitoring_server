@@ -26,8 +26,7 @@ async fn get_temps(system_data: &State<SystemInformation>) -> Json<entity::syste
 
 #[rocket::main]
 async fn main() {
-    let value =
-        SystemInformation::new(RwLock::new(service::system_monitoring::get_current_value()));
+    let value = SystemInformation::new(RwLock::new(entity::system::SystemData::default()));
 
     let updater = system_monitoring::update_value(value.clone());
     let server = rocket::build()

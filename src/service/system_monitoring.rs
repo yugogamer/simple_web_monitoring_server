@@ -4,9 +4,16 @@ use crate::entity::system::{ComponentTemp, Core, SystemData};
 use sysinfo::{ComponentExt, ProcessorExt, System, SystemExt};
 use tokio::sync::RwLock;
 
-pub fn get_current_value() -> SystemData {
-    let mut sys = System::new_all();
-    sys.refresh_all();
+/// Get system information
+/// # Arguments
+/// * `system_data` - System
+/// # Returns
+/// * `SystemData` - System data
+pub fn get_current_value(sys: &mut System) -> SystemData {
+    sys.refresh_cpu();
+    sys.refresh_memory();
+    sys.refresh_components();
+    sys.refresh_components_list();
     let cpu_global = sys.global_processor_info();
 
     let mut cores = Vec::new();
@@ -53,11 +60,15 @@ pub fn get_current_value() -> SystemData {
     }
 }
 
+/// auto update system information
+/// # Arguments
+/// * `system_data` - System
 pub async fn update_value(value: Arc<RwLock<SystemData>>) {
+    let mut sys = System::new_all();
+    sys.refresh_all();
     loop {
-        let mut value_write = value.write().await;
-        *value_write = get_current_value();
-        drop(value_write);
         tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+        let mut value_write = value.write().await;
+        *value_write = get_current_value(&mut sys);
     }
 }
