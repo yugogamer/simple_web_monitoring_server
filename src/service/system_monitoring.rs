@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::SystemTime};
 
 use crate::entity::system::{ComponentTemp, Core, SystemData};
-use sysinfo::{ComponentExt, ProcessorExt, System, SystemExt};
+use sysinfo::{ComponentExt, Process, ProcessExt, ProcessorExt, System, SystemExt};
 use tokio::sync::RwLock;
 
 /// Get system information
@@ -14,6 +14,8 @@ pub fn get_current_value(sys: &mut System) -> SystemData {
     sys.refresh_memory();
     sys.refresh_components();
     sys.refresh_components_list();
+    sys.refresh_processes();
+
     let cpu_global = sys.global_processor_info();
 
     let mut cores = Vec::new();
@@ -41,6 +43,10 @@ pub fn get_current_value(sys: &mut System) -> SystemData {
     let os = sys.long_os_version();
 
     let uptime = sys.uptime();
+
+    for (pid, process) in sys.processes() {
+        println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
+    }
 
     SystemData {
         hostname,

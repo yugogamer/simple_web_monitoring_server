@@ -6,7 +6,7 @@ use std::sync::Arc;
 use rocket::serde::json::Json;
 use rocket::State;
 use service::system_monitoring;
-use tokio::{join, sync::RwLock};
+use tokio::{join, select, signal, sync::RwLock};
 
 mod entity;
 mod service;
@@ -34,5 +34,10 @@ async fn main() {
         .mount("/", routes![status, get_temps])
         .launch();
 
-    let _result = join!(server, updater);
+    let _result = select! {
+        _ = updater => {},
+        _ = server => {
+            println!("Server stopped");
+        },
+    };
 }
