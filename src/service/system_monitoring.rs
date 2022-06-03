@@ -1,8 +1,8 @@
 use std::{sync::Arc, time::SystemTime};
 
-use crate::entity::system::{ComponentTemp, Core, SystemData};
-use sysinfo::{ComponentExt, Process, ProcessExt, ProcessorExt, System, SystemExt};
-use tokio::sync::RwLock;
+use crate::entity::system::{ComponentTemp, Core, DiskUsageData, ProcessData, SystemData};
+use sysinfo::{ComponentExt, ProcessExt, ProcessorExt, System, SystemExt};
+use tokio::{select, sync::RwLock};
 
 /// Get system information
 /// # Arguments
@@ -44,8 +44,21 @@ pub fn get_current_value(sys: &mut System) -> SystemData {
 
     let uptime = sys.uptime();
 
-    for (pid, process) in sys.processes() {
-        println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
+    let mut processes = Vec::new();
+    for (_pid, process) in sys.processes() {
+        let disk_usage = process.disk_usage();
+        processes.push(ProcessData {
+            name: process.name().to_string(),
+            disk_usage: DiskUsageData {
+                total_written_bytes: disk_usage.total_written_bytes,
+                written_bytes: disk_usage.written_bytes,
+                total_read_bytes: disk_usage.total_read_bytes,
+                read_bytes: disk_usage.read_bytes,
+            },
+            memory: process.memory(),
+            cpu_usage: process.cpu_usage(),
+        });
+        //println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
     }
 
     SystemData {
@@ -63,18 +76,29 @@ pub fn get_current_value(sys: &mut System) -> SystemData {
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_millis(),
+        processes,
     }
 }
 
 /// auto update system information
 /// # Arguments
 /// * `system_data` - System
-pub async fn update_value(value: Arc<RwLock<SystemData>>) {
+pub async fn update_value(
+    value: Arc<RwLock<SystemData>>,
+    mut recv: tokio::sync::oneshot::Receiver<bool>,
+) {
     let mut sys = System::new_all();
     sys.refresh_all();
     loop {
-        tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
-        let mut value_write = value.write().await;
-        *value_write = get_current_value(&mut sys);
+        select! {
+            _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
+                let mut value_write = value.write().await;
+                *value_write = get_current_value(&mut sys);
+            }
+            _ = &mut recv=>{
+                break;
+            }
+        }
     }
+    println!("sysinfo stopped");
 }

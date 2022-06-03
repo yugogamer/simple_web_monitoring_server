@@ -1,5 +1,4 @@
 use rocket::serde::{Deserialize, Serialize};
-
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 /// System data
@@ -26,6 +25,7 @@ pub struct SystemData {
     pub cpu_cores: Vec<Core>,
     pub temps: Vec<ComponentTemp>,
     pub last_update: u128,
+    pub processes: Vec<ProcessData>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -48,6 +48,34 @@ pub struct ComponentTemp {
     pub temperature: f32,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(crate = "rocket::serde")]
+/// ProcessData
+/// - name: process name
+/// - disk_usage: process disk usage
+/// - memory: process memory
+/// - cpu_usage: process cpu usage
+pub struct ProcessData {
+    pub name: String,
+    pub disk_usage: DiskUsageData,
+    pub memory: u64,
+    pub cpu_usage: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(crate = "rocket::serde")]
+// DiskUsage
+pub struct DiskUsageData {
+    /// Total number of written bytes.
+    pub total_written_bytes: u64,
+    /// Number of written bytes since the last refresh.
+    pub written_bytes: u64,
+    /// Total number of read bytes.
+    pub total_read_bytes: u64,
+    /// Number of read bytes since the last refresh.
+    pub read_bytes: u64,
+}
+
 impl Default for SystemData {
     fn default() -> Self {
         SystemData {
@@ -62,6 +90,7 @@ impl Default for SystemData {
             cpu_cores: vec![],
             temps: vec![],
             last_update: 0,
+            processes: vec![],
         }
     }
 }

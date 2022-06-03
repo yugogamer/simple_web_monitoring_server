@@ -6,7 +6,7 @@ use std::sync::Arc;
 use rocket::serde::json::Json;
 use rocket::State;
 use service::system_monitoring;
-use tokio::{join, select, signal, sync::RwLock};
+use tokio::{select, sync::RwLock};
 
 mod entity;
 mod service;
@@ -28,7 +28,9 @@ async fn get_temps(system_data: &State<SystemInformation>) -> Json<entity::syste
 async fn main() {
     let value = SystemInformation::new(RwLock::new(entity::system::SystemData::default()));
 
-    let updater = system_monitoring::update_value(value.clone());
+    let (send, recv) = tokio::sync::oneshot::channel();
+
+    let updater = system_monitoring::update_value(value.clone(), recv);
     let server = rocket::build()
         .manage(value.clone())
         .mount("/", routes![status, get_temps])
@@ -37,6 +39,7 @@ async fn main() {
     let _result = select! {
         _ = updater => {},
         _ = server => {
+            send.send(true).unwrap();
             println!("Server stopped");
         },
     };
